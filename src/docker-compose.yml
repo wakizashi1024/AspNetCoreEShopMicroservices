@@ -1,0 +1,36 @@
+﻿version: '3'
+
+services:
+  catalogdb:
+    image: mongo
+    container_name: catalogdb
+    restart: always
+    command: --auth --config /etc/mongo/mongod.conf
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin1234
+      MONGO_INITDB_DATABASE: CatalogDb
+      TZ: Asia/Taipei
+    volumes:
+      - ../docker/database/mongo/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ../docker/database/mongo/configdb:/data/configdb
+      - ../docker/database/mongo/data:/data/db
+      - ../docker/database/mongo/mongod.conf:/etc/mongo/mongod.conf
+    ports:
+      - '27017:27017'
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+
+  catalog.api:
+    image: catalog.api
+    container_name: catalog.api
+    build:
+      context: .
+      dockerfile: Services/Catalog/Catalog.API/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - "DatabaseSettings:ConnectionString=mongodb://user:user1234@catalogdb:27017/CatalogDb"
+    ports:
+      - "8000:80"
+    depends_on:
+      - catalogdb
