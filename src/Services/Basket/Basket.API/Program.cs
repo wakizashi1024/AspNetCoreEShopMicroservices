@@ -14,6 +14,11 @@ builder.Services.AddSwaggerGen(sa =>
         Version = "v1",
     }));
 
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetValue<string>("CacheSettings:ConnectionString");
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
