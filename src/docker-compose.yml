@@ -19,8 +19,21 @@ services:
     ports:
       - '27017:27017'
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-
+      test: ["CMD", "echo", "db.runCommand('ping').ok", "|", "mongosh", "localhost:27017/test", "--quiet"]
+      
+  basketdb:
+    image: redis
+    container_name: basketdb
+    restart: always
+    command: /bin/sh -c "redis-server --requirepass $${REDIS_PASSWORD}"
+    environment:
+      REDIS_PASSWORD: redis1234
+      TZ: Asia/Taipei
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--raw", "incr", "ping"]
+  
   catalog.api:
     image: catalog.api
     container_name: catalog.api
@@ -28,9 +41,24 @@ services:
       context: .
       dockerfile: Services/Catalog/Catalog.API/Dockerfile
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - "DatabaseSettings:ConnectionString=mongodb://user:user1234@catalogdb:27017/CatalogDb"
+      ASPNETCORE_ENVIRONMENT: Development
+      "DatabaseSettings:ConnectionString": "mongodb://user:user1234@catalogdb:27017/CatalogDb"
+      TZ: Asia/Taipei
     ports:
       - "8000:80"
     depends_on:
       - catalogdb
+
+  basket.api:
+    image: basket.api
+    container_name: basket.api
+    build:
+      context: .
+      dockerfile: Services/Basket/Basket.API/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      "CacheSettings:ConnectionString": "basketdb:6379, password=redis1234"
+    ports:
+      - "8001:80"
+    depends_on:
+      - basketdb
