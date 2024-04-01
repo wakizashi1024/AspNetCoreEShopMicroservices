@@ -33,6 +33,39 @@ services:
       - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--raw", "incr", "ping"]
+      
+  discountdb:
+    image: postgres
+    container_name: discountdb
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin1234
+      POSTGRES_DB: DiscountDb
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ../docker/database/postgres/data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@domain.org
+      PGADMIN_DEFAULT_PASSWORD: admin1234
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      - ../docker/pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      discountdb:
+        condition: service_healthy
   
   catalog.api:
     image: catalog.api
