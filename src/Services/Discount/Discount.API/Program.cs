@@ -1,3 +1,4 @@
+using Discount.API.Repositories;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,8 @@ builder.Services.AddSwaggerGen(sa =>
         Title = "Discount.API",
         Version = "v1",
     }));
+
+builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
 
 var app = builder.Build();
 
