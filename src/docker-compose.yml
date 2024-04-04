@@ -1,9 +1,9 @@
 ﻿version: '3'
 
 services:
-  catalogdb:
+  catalog_db:
     image: mongo
-    container_name: catalogdb
+    container_name: catalog_db
     restart: always
     command: --auth --config /etc/mongo/mongod.conf
     environment:
@@ -21,9 +21,9 @@ services:
     healthcheck:
       test: ["CMD", "echo", "db.runCommand('ping').ok", "|", "mongosh", "localhost:27017/test", "--quiet"]
       
-  basketdb:
+  basket_db:
     image: redis
-    container_name: basketdb
+    container_name: basket_db
     restart: always
     command: /bin/sh -c "redis-server --requirepass $${REDIS_PASSWORD}"
     environment:
@@ -34,9 +34,9 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "--raw", "incr", "ping"]
       
-  discountdb:
+  discount_db:
     image: postgres
-    container_name: discountdb
+    container_name: discount_db
     restart: always
     environment:
       POSTGRES_USER: admin
@@ -50,9 +50,9 @@ services:
     healthcheck:
       test: ["CMD", "sh", "-c", "pg_isready", "-U", "${POSTGRES_USER}", "-d", "${POSTGRES_DB}"]
   
-  pgadmin:
+  pg_admin:
     image: dpage/pgadmin4
-    container_name: pgadmin
+    container_name: pg_admin
     restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@domain.org
@@ -64,48 +64,64 @@ services:
     ports:
       - "5050:80"
     depends_on:
-      discountdb:
+      discount_db:
         condition: service_healthy
   
-  catalog.api:
+  catalog_api:
     image: catalog.api
-    container_name: catalog.api
+    container_name: catalog_api
     build:
       context: .
       dockerfile: Services/Catalog/Catalog.API/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      "DatabaseSettings:ConnectionString": "mongodb://user:user1234@catalogdb:27017/CatalogDb"
+      "DatabaseSettings:ConnectionString": "mongodb://user:user1234@catalog_db:27017/CatalogDb"
       TZ: Asia/Taipei
     ports:
       - "8000:80"
     depends_on:
-      - catalogdb
+      - catalog_db
 
-  basket.api:
+  basket_api:
     image: basket.api
-    container_name: basket.api
+    container_name: basket_api
     build:
       context: .
       dockerfile: Services/Basket/Basket.API/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      "CacheSettings:ConnectionString": "basketdb:6379, password=redis1234"
+      "CacheSettings:ConnectionString": "basket_db:6379, password=redis1234"
+      "GrpcSettings:DiscountUrl": "http://discount_grpc"
     ports:
       - "8001:80"
     depends_on:
-      - basketdb
+      - basket_db
+      - discount_grpc
 
-  discount.api:
+  discount_api:
     image: discount.api
-    container_name: discount.api
+    container_name: discount_api
     build:
       context: .
       dockerfile: Services/Discount/Discount.API/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      "DatabaseSettings:ConnectionString": "Server=discountdb;Port=5432;Database=DiscountDb;User Id=admin; Password=admin1234;"
+      "DatabaseSettings:ConnectionString": "Server=discount_db;Port=5432;Database=DiscountDb;User Id=admin; Password=admin1234;"
     ports:
       - "8002:80"
     depends_on:
-      - discountdb
+      - discount_db
+
+  discount_grpc:
+    image: discount.grpc
+    container_name: discount_grpc
+    build:
+      context: .
+      dockerfile: Services/Discount/Discount.Grpc/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      "DatabaseSettings:ConnectionString": "Server=discount_db;Port=5432;Database=DiscountDb;User Id=admin; Password=admin1234;"
+    ports:
+      - "8003:80"
+    depends_on:
+      - discount_db
