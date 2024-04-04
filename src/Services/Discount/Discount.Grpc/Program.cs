@@ -1,4 +1,5 @@
 using Discount.Grpc.Extensions;
+using Discount.Grpc.Mapper;
 using Discount.Grpc.Repositories;
 using Discount.Grpc.Services;
 
@@ -11,6 +12,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddGrpc();
 
 builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
+
+builder.Services.AddAutoMapper(typeof(DiscountProfile));
 
 var app = builder.Build();
 
