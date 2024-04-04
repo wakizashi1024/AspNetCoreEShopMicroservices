@@ -8,15 +8,21 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Grpc.AspNetCore" Version="2.49.0"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.17" />
         <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="7.0.17" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="..\..\..\.dockerignore">
-        <Link>.dockerignore</Link>
-      </Content>
+        <Protobuf Include="..\..\Discount\Discount.Grpc\Protos\discount.proto" GrpcServices="Client">
+            <Link>Protos\discount.proto</Link>
+        </Protobuf>
     </ItemGroup>
 
+    <ItemGroup>
+        <Content Include="..\..\..\.dockerignore">
+            <Link>.dockerignore</Link>
+        </Content>
+    </ItemGroup>
 </Project>
